@@ -4,6 +4,7 @@ export POWERLINE_COMMAND="oh-my-posh"
 export POSH_PID=$$
 export CONDA_PROMPT_MODIFIER=false
 omp_start_time=""
+omp_sigint=""
 
 # start timer on command start
 PS0='${omp_start_time:0:$((omp_start_time="$(_omp_start_timer)",0))}$(_omp_ftcs_command_start)'
@@ -61,6 +62,23 @@ function _omp_hook() {
         omp_start_time=""
         no_exit_code="false"
     fi
+
+    # コマンドが実行されなかった場合(Ctrl+cやEnter空打ちなど)は
+    # 直前のコマンド終了ステータスを引き継がないようにする
+    if [[ $no_exit_code == "true" ]]; then
+        # Ctrl+cが入力された場合のみ終了ステータスにSIGINTを設定
+        if [[ $omp_sigint == "true" ]]; then
+            ret=130
+        # それ以外の場合(Enter空打ちを想定)の場合は終了ステータスをクリア
+        else
+            ret=0
+        fi
+        pipeStatus=($ret)
+    fi
+
+    # Ctrl+c入力時にomp_sigintフラグを立てる
+    omp_sigint=""
+    trap "omp_sigint=true" SIGINT  # TODO: trapを上書きしないように(参考: starship.bash)
 
     set_poshcontext
     _set_posh_cursor_position
