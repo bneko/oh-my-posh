@@ -40,6 +40,7 @@ type Segment struct {
 	MaxWidth            int            `json:"max_width,omitempty" toml:"max_width,omitempty"`
 	MinWidth            int            `json:"min_width,omitempty" toml:"min_width,omitempty"`
 	Filler              string         `json:"filler,omitempty" toml:"filler,omitempty"`
+	AlwaysEnabled       bool           `json:"always_enabled,omitempty" toml:"always_enabled,omitempty"`
 
 	Enabled bool `json:"-" toml:"-"`
 
@@ -475,7 +476,8 @@ func (segment *Segment) string() string {
 		}
 	}
 	if len(segment.Template) == 0 {
-		segment.Template = segment.writer.Template()
+		//segment.Template = segment.writer.Template()
+		return ""
 	}
 	tmpl := &template.Text{
 		Template:        segment.Template,
@@ -556,7 +558,8 @@ func (segment *Segment) SetText() {
 		return
 	}
 	segment.text = segment.string()
-	segment.Enabled = len(strings.ReplaceAll(segment.text, " ", "")) > 0
+	//segment.Enabled = len(strings.ReplaceAll(segment.text, " ", "")) > 0
+	segment.Enabled = segment.AlwaysEnabled || len(strings.ReplaceAll(segment.text, " ", "")) > 0
 	if !segment.Enabled {
 		segment.env.TemplateCache().RemoveSegmentData(segment.Name())
 	}
