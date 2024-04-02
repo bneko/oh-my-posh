@@ -321,7 +321,7 @@ func (g *Git) setUser() {
 
 func (g *Git) getBareRepoInfo() {
 	head := g.FileContents(g.workingDir, "HEAD")
-	branchIcon := g.props.GetString(BranchIcon, "\uE0A0")
+	branchIcon := g.props.GetString(BranchIcon, "\uE0A0 ")
 	g.Ref = strings.Replace(head, "ref: refs/heads/", "", 1)
 	g.HEAD = fmt.Sprintf("%s%s", branchIcon, g.Ref)
 	if !g.props.GetBool(FetchUpstreamIcon, false) {
@@ -593,7 +593,7 @@ func (g *Git) getGitCommandOutput(args ...string) string {
 }
 
 func (g *Git) setGitHEADContext() {
-	branchIcon := g.props.GetString(BranchIcon, "\uE0A0")
+	branchIcon := g.props.GetString(BranchIcon, "\uE0A0 ")
 	if g.Ref == DETACHED {
 		g.Detached = true
 		g.setPrettyHEADName()
@@ -644,7 +644,7 @@ func (g *Git) setGitHEADContext() {
 	}
 
 	// merge
-	commitIcon := g.props.GetString(CommitIcon, "\uF417")
+	commitIcon := g.props.GetString(CommitIcon, "\uF417 ")
 
 	if g.hasGitFile("MERGE_MSG") {
 		g.Merge = true
@@ -656,7 +656,7 @@ func (g *Git) setGitHEADContext() {
 			var headIcon, theirs string
 			switch matches["type"] {
 			case "tag":
-				headIcon = g.props.GetString(TagIcon, "\uF412")
+				headIcon = g.props.GetString(TagIcon, "\uF412 ")
 				theirs = matches["theirs"]
 			case "commit":
 				headIcon = commitIcon
@@ -747,7 +747,7 @@ func (g *Git) setPrettyHEADName() {
 		g.Detached = !strings.HasPrefix(HEADRef, "ref:")
 		if strings.HasPrefix(HEADRef, BRANCHPREFIX) {
 			branchName := strings.TrimPrefix(HEADRef, BRANCHPREFIX)
-			g.HEAD = fmt.Sprintf("%s%s", g.props.GetString(BranchIcon, "\uE0A0"), g.formatHEAD(branchName))
+			g.HEAD = fmt.Sprintf("%s%s", g.props.GetString(BranchIcon, "\uE0A0 "), g.formatHEAD(branchName))
 			return
 		}
 		// no branch, points to commit
@@ -760,7 +760,7 @@ func (g *Git) setPrettyHEADName() {
 	// check for tag
 	tagName := g.getGitCommandOutput("describe", "--tags", "--exact-match")
 	if len(tagName) > 0 {
-		g.HEAD = fmt.Sprintf("%s%s", g.props.GetString(TagIcon, "\uF412"), tagName)
+		g.HEAD = fmt.Sprintf("%s%s", g.props.GetString(TagIcon, "\uF412 "), tagName)
 		return
 	}
 
@@ -770,7 +770,7 @@ func (g *Git) setPrettyHEADName() {
 		return
 	}
 
-	g.HEAD = fmt.Sprintf("%s%s", g.props.GetString(CommitIcon, "\uF417"), g.ShortHash)
+	g.HEAD = fmt.Sprintf("%s%s", g.props.GetString(CommitIcon, "\uF417 "), g.ShortHash)
 }
 
 func (g *Git) WorktreeCount() int {
