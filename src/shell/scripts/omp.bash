@@ -16,6 +16,7 @@ _omp_execution_time=-1
 _omp_no_status=true
 _omp_status=0
 _omp_pipestatus=0
+_omp_sigint=''
 _omp_executable=::OMP::
 
 # switches to enable/disable features
@@ -111,6 +112,11 @@ function _omp_get_secondary() {
 function _omp_hook() {
     _omp_status=$? _omp_pipestatus=("${PIPESTATUS[@]}")
 
+    # Ctrl+C入力時に_omp_sigintフラグを立てるためにtrapを登録する。
+    #  (PROMPT_COMMANDに_direnv_hookがあるとtrapを毎回クリアするため
+    #   _direnv_hookの後に_omp_hookが実行される前提で毎回trapを登録しなおす)
+    _omp_install_sigint_trap
+
     if [[ -v BP_PIPESTATUS && ${#BP_PIPESTATUS[@]} -ge ${#_omp_pipestatus[@]} ]]; then
         _omp_pipestatus=("${BP_PIPESTATUS[@]}")
     fi
@@ -121,12 +127,25 @@ function _omp_hook() {
     _omp_job_count=${#_omp_jobs[@]}
 
     _omp_execution_time=-1
+    _omp_no_status=true  # 本家の対応漏れの補完(zsh流): FTCS/iTerm 統合マークの正確化
     if [[ $_omp_start_time ]]; then
         local omp_now=$("$_omp_executable" get millis)
         _omp_execution_time=$((omp_now - _omp_start_time))
         _omp_no_status=false
+    else
+        # コマンド未実行(Ctrl+C/空Enter)時は直前の終了ステータスを引き継がない。
+        # bashのstatusセグメントは--status(=$?=_omp_status)のみ参照するため直接書き換える。
+        if [[ ${_omp_sigint} == "true" ]]; then
+            # Ctrl+Cの場合は終了ステータスはSIGINT
+            _omp_status=130
+        else
+            # 空Enterの場合は終了ステータスをクリア
+            _omp_status=0
+        fi
+        _omp_pipestatus=("${_omp_status}")
     fi
     _omp_start_time=''
+    _omp_sigint=''
 
     if [[ ${_omp_pipestatus[-1]} != "$_omp_status" ]]; then
         _omp_pipestatus=("$_omp_status")
@@ -142,6 +161,28 @@ function _omp_hook() {
     shopt -s promptvars
 
     return $_omp_status
+}
+
+function _omp_install_sigint_trap() {
+    local trap_cmd='_omp_sigint=true'
+
+    # 既存trapを安全に展開
+    local org_trap
+    eval "org_trap=($(trap -p SIGINT 2>/dev/null))"
+
+    # 「trap -- 'CMD' SIGINT」のCMD部分を抽出
+    local org_trap_cmd="${org_trap[2]-}"
+
+    if [[ -z "${org_trap_cmd}" ]]; then
+        # 既存trap無しの場合はtrap_cmdを登録
+        trap "${trap_cmd}" SIGINT
+    elif [[ "${org_trap_cmd}" == *"${trap_cmd}"* ]]; then
+        # trap_cmdが既に登録されている場合は何もしない(二重登録防止)
+        :
+    else
+        # 既存trap有りの場合はtrap_cmdを追加して登録
+        trap "${org_trap_cmd}; ${trap_cmd}" SIGINT
+    fi
 }
 
 function _omp_install_hook() {
